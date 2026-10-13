@@ -28,7 +28,8 @@ public class ArchitectureTests
     [Fact]
     public void Domain_depends_on_the_framework_only()
     {
-        ReferencesOf(Domain).ShouldAllBe(r => r.StartsWith("System"));
+        // Core-library names (mscorlib/netstandard) can appear once a coverage tool instruments the assembly.
+        ReferencesOf(Domain).ShouldAllBe(r => r.StartsWith("System") || r == "mscorlib" || r == "netstandard");
     }
 
     [Fact]
