@@ -5,6 +5,7 @@
         <div class="app-logo">@UiText.AppName</div>
         @* Menu chức năng (Bài 1): RouterLink highlights the current page. *@
         <Menu Theme="MenuTheme.Dark" Mode="MenuMode.Inline">
+            <MenuItem RouterLink="/reports" RouterMatch="NavLinkMatch.Prefix" Icon="bar-chart">@UiText.Reports</MenuItem>
             <MenuItem RouterLink="/students" RouterMatch="NavLinkMatch.Prefix" Icon="team">@UiText.Students</MenuItem>
             <MenuItem RouterLink="/classrooms" RouterMatch="NavLinkMatch.Prefix" Icon="home">@UiText.Classrooms</MenuItem>
             <MenuItem RouterLink="/teachers" RouterMatch="NavLinkMatch.Prefix" Icon="user">@UiText.Teachers</MenuItem>
