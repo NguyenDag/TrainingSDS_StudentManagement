@@ -9,7 +9,9 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d studentmanagement"]
+      # Over TCP: the temporary server that runs initdb scripts listens on the socket only,
+      # so the container is not reported healthy until schema and seed are in place.
+      test: ["CMD-SHELL", "pg_isready -h localhost -U postgres -d studentmanagement"]
       interval: 5s
       timeout: 3s
       retries: 10
