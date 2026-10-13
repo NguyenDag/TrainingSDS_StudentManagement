@@ -50,6 +50,9 @@ public sealed class DatabaseFixture : IAsyncLifetime
 
     public ISession OpenSession() => SessionFactory.OpenAppSession();
 
+    /// <summary>Simulates a database outage.</summary>
+    public Task StopAsync() => _container.StopAsync();
+
     /// <summary>Empties every table (seed data included) so each test starts from a known state.</summary>
     public Task ResetAsync() =>
         ExecuteAsSuperuserAsync("TRUNCATE students, classrooms, teachers RESTART IDENTITY CASCADE");

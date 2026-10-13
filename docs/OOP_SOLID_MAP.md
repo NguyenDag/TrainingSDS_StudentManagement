@@ -58,6 +58,9 @@ Mỗi class chỉ có một lý do để thay đổi.
 | [StudentInputValidator.cs:8](../src/StudentManagement.Application/Students/StudentInputValidator.cs#L8) | Quy tắc dữ liệu nhập |
 | [ValidationRules.cs:10](../src/StudentManagement.Application/Common/ValidationRules.cs#L10) | Quy tắc nhập dùng chung (mã, chuỗi bắt buộc, ngày sinh) |
 | [DtoMappings.cs:12](../src/StudentManagement.Application/DtoMappings.cs#L12) | Hình dạng dữ liệu trả ra |
+| [StudentGrpcService.cs:10](../src/StudentManagement.GrpcServer/Services/StudentGrpcService.cs#L10) | Chuyển đổi transport (proto ↔ DTO), không chứa nghiệp vụ |
+| [ExceptionInterceptor.cs](../src/StudentManagement.GrpcServer/Interceptors/ExceptionInterceptor.cs), [LoggingInterceptor.cs](../src/StudentManagement.GrpcServer/Interceptors/LoggingInterceptor.cs) | Ánh xạ lỗi sang gRPC status; ghi log mỗi call |
+| [ProtoMappings.cs](../src/StudentManagement.GrpcServer/Mapping/ProtoMappings.cs) | Hình dạng message proto |
 | [Messages.cs:4](../src/StudentManagement.Application/Common/Messages.cs#L4) | Câu chữ tiếng Việt hiển thị cho người dùng |
 | [AppExceptions.cs:24](../src/StudentManagement.Application/Common/Exceptions/AppExceptions.cs#L24) | Mã lỗi ổn định cho client/log |
 | [StudentRepository.cs:10](../src/StudentManagement.Infrastructure/Persistence/Repositories/StudentRepository.cs#L10) | Cách truy vấn dữ liệu (NHibernate LINQ) |
@@ -74,7 +77,8 @@ Mở rộng bằng cách thêm code mới, không sửa code đang chạy.
 | [IRepository.cs:6](../src/StudentManagement.Application/Abstractions/IRepository.cs#L6) | Đổi kho dữ liệu (in-memory → NHibernate) = thêm một implementation, service không đổi một dòng |
 | [PagedQuery.cs:10](../src/StudentManagement.Application/Common/PagedQuery.cs#L10) | Thêm loại danh sách mới = thêm một `record : PagedQuery`, quy tắc phân trang có sẵn |
 | [ValidationRules.cs:10](../src/StudentManagement.Application/Common/ValidationRules.cs#L10) | Validator mới ghép từ các rule có sẵn |
-| [AppExceptions.cs:7](../src/StudentManagement.Application/Common/Exceptions/AppExceptions.cs#L7) | Loại lỗi mới = thêm lớp con `AppException`; interceptor (M5) map theo kiểu |
+| [AppExceptions.cs:7](../src/StudentManagement.Application/Common/Exceptions/AppExceptions.cs#L7) | Loại lỗi mới = thêm lớp con `AppException`; [ExceptionInterceptor](../src/StudentManagement.GrpcServer/Interceptors/ExceptionInterceptor.cs#L39) map theo kiểu |
+| [ExceptionInterceptor.cs:39](../src/StudentManagement.GrpcServer/Interceptors/ExceptionInterceptor.cs#L39) | Bảng `Exception → StatusCode`: thêm loại lỗi = thêm một dòng, không service nào phải sửa |
 | [StudentRepository.cs:13](../src/StudentManagement.Infrastructure/Persistence/Repositories/StudentRepository.cs#L13) | Sort: bảng `SortField → Expression`; thêm kiểu sắp xếp = thêm một dòng |
 | [SnakeCaseNamingConvention.cs:14](../src/StudentManagement.Infrastructure/Persistence/SnakeCaseNamingConvention.cs#L14) | Tên bảng/cột suy ra bằng convention; thêm property không phải khai báo tên cột |
 | M4 nói chung | Thêm cả tầng NHibernate mà **không sửa dòng nào** trong Application ([EndToEndTests.cs](../tests/StudentManagement.Infrastructure.Tests/EndToEndTests.cs) chạy chính các service của M3 trên PostgreSQL) |
@@ -108,7 +112,7 @@ Tầng cao (Application) định nghĩa interface; tầng thấp (Infrastructure
 | [StudentAppService.cs:11-15](../src/StudentManagement.Application/Students/StudentAppService.cs#L11-L15) | Constructor nhận toàn interface; không `new` phụ thuộc nào |
 | [StudentManagement.Application.csproj](../src/StudentManagement.Application/StudentManagement.Application.csproj) | Chỉ reference Domain + FluentValidation, không có NHibernate |
 | [StudentRepository.cs:10](../src/StudentManagement.Infrastructure/Persistence/Repositories/StudentRepository.cs#L10), [DependencyInjection.cs:41](../src/StudentManagement.Infrastructure/DependencyInjection.cs#L41) | Infrastructure implement interface của Application và tự đăng ký qua `AddInfrastructure()`; mọi kiểu NHibernate đều `internal` |
-| *(M5)* | `GrpcServer/Program.cs` là composition root: `AddApplication()` + `AddInfrastructure()` |
+| [Program.cs:11-12](../src/StudentManagement.GrpcServer/Program.cs#L11-L12) | Composition root: nơi duy nhất biết mọi tầng, ghép `AddApplication()` + `AddInfrastructure()` |
 
 ### Dependency Injection
 
@@ -127,3 +131,4 @@ Tầng cao (Application) định nghĩa interface; tầng thấp (Infrastructure
 | DTO + Mapper | [StudentDtos.cs](../src/StudentManagement.Application/Students/StudentDtos.cs), [DtoMappings.cs](../src/StudentManagement.Application/DtoMappings.cs) |
 | Template Method | [Person.cs:41-51](../src/StudentManagement.Domain/Common/Person.cs#L41-L51) gọi hook `MinimumAge` |
 | Test Double (Fake) | [InMemoryRepository.cs](../tests/StudentManagement.Application.Tests/Fakes/InMemoryRepository.cs), [FakeRepositories.cs](../tests/StudentManagement.Application.Tests/Fakes/FakeRepositories.cs) |
+| Interceptor (Chain of Responsibility) | [LoggingInterceptor.cs](../src/StudentManagement.GrpcServer/Interceptors/LoggingInterceptor.cs) → [ExceptionInterceptor.cs](../src/StudentManagement.GrpcServer/Interceptors/ExceptionInterceptor.cs) → service |
