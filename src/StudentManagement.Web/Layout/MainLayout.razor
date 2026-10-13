@@ -1,3 +1,18 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
-@Body
+<Layout Class="app-layout">
+    <Sider Collapsible Breakpoint="BreakpointType.Lg" Width="220">
+        <div class="app-logo">@UiText.AppName</div>
+        @* Menu chức năng (Bài 1): RouterLink highlights the current page. *@
+        <Menu Theme="MenuTheme.Dark" Mode="MenuMode.Inline">
+            <MenuItem RouterLink="/students" RouterMatch="NavLinkMatch.Prefix" Icon="team">@UiText.Students</MenuItem>
+            <MenuItem RouterLink="/classrooms" RouterMatch="NavLinkMatch.Prefix" Icon="home">@UiText.Classrooms</MenuItem>
+            <MenuItem RouterLink="/teachers" RouterMatch="NavLinkMatch.Prefix" Icon="user">@UiText.Teachers</MenuItem>
+        </Menu>
+    </Sider>
+    <Layout>
+        <Content Class="app-content">
+            @Body
+        </Content>
+    </Layout>
+</Layout>

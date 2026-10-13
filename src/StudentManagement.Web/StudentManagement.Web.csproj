@@ -1,7 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <!-- Full ICU data so the vi-VN culture (dates, Ant Design texts) works whatever the browser language. -->
+    <BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
+  </PropertyGroup>
+
   <ItemGroup>
+    <PackageReference Include="AntDesign" />
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Grpc.Net.Client.Web" />
+    <PackageReference Include="Grpc.StatusProto" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="all" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The only thing the web client shares with the server is the contract. -->
+    <Protobuf Include="..\..\protos\*.proto" ProtoRoot="..\..\protos" GrpcServices="Client" Link="Protos\%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

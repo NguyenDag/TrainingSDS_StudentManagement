@@ -1,0 +1,27 @@
+@inject ClassroomService.ClassroomServiceClient ClassroomClient
+
+@* Label includes the teacher, so two classes with similar names can be told apart. *@
+<RemoteSelect TItem="Classroom"
+              Value="Value" ValueChanged="ValueChanged" ValueExpression="ValueExpression"
+              Search="SearchAsync" Fetch="FetchAsync"
+              IdOf="c => c.Id" LabelOf="@(c => $"{c.Code} – {c.Name} ({c.Teacher.FullName})")"
+              AllowClear="AllowClear" Placeholder="@Placeholder" Style="@Style" />
+
+@code {
+    [Parameter] public int? Value { get; set; }
+    [Parameter] public EventCallback<int?> ValueChanged { get; set; }
+    [Parameter] public System.Linq.Expressions.Expression<Func<int?>>? ValueExpression { get; set; }
+    [Parameter] public bool AllowClear { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? Style { get; set; }
+
+    private async Task<IEnumerable<Classroom>> SearchAsync(string? keyword)
+    {
+        var request = new ListClassroomsRequest { PageSize = 20 };
+        if (keyword is not null) request.Keyword = keyword;
+        return (await ClassroomClient.ListClassroomsAsync(request)).Items;
+    }
+
+    private async Task<Classroom> FetchAsync(int id) =>
+        await ClassroomClient.GetClassroomAsync(new GetClassroomRequest { Id = id });
+}

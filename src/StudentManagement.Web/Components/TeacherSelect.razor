@@ -1,0 +1,26 @@
+@inject TeacherService.TeacherServiceClient TeacherClient
+
+<RemoteSelect TItem="Teacher"
+              Value="Value" ValueChanged="ValueChanged" ValueExpression="ValueExpression"
+              Search="SearchAsync" Fetch="FetchAsync"
+              IdOf="t => t.Id" LabelOf="@(t => $"{t.Code} – {t.FullName}")"
+              AllowClear="AllowClear" Placeholder="@Placeholder" Style="@Style" />
+
+@code {
+    [Parameter] public int? Value { get; set; }
+    [Parameter] public EventCallback<int?> ValueChanged { get; set; }
+    [Parameter] public System.Linq.Expressions.Expression<Func<int?>>? ValueExpression { get; set; }
+    [Parameter] public bool AllowClear { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? Style { get; set; }
+
+    private async Task<IEnumerable<Teacher>> SearchAsync(string? keyword)
+    {
+        var request = new ListTeachersRequest { PageSize = 20 };
+        if (keyword is not null) request.Keyword = keyword;
+        return (await TeacherClient.ListTeachersAsync(request)).Items;
+    }
+
+    private async Task<Teacher> FetchAsync(int id) =>
+        await TeacherClient.GetTeacherAsync(new GetTeacherRequest { Id = id });
+}

@@ -1,0 +1,12 @@
+@* Rendered by the router for unknown routes (see App.razor). *@
+<PageTitle>@UiText.NotFoundTitle</PageTitle>
+
+<Result Status="ResultStatus.Http404" Title="404" SubTitle="@UiText.NotFoundSubtitle">
+    <Extra>
+        <Button Type="ButtonType.Primary" OnClick="@(() => Navigation.NavigateTo(""))">@UiText.BackHome</Button>
+    </Extra>
+</Result>
+
+@code {
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+}
