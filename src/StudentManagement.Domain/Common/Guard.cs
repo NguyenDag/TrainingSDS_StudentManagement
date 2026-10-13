@@ -7,8 +7,8 @@ internal static partial class Guard
 {
     public static string Code(string? value)
     {
-        var code = value?.Trim().ToUpperInvariant() ?? string.Empty;
-        if (!CodePattern().IsMatch(code))
+        var code = EntityCode.Normalize(value);
+        if (!EntityCode.IsValid(code))
             throw new DomainException($"Code must be 3-20 letters (A-Z) or digits, got \"{value}\".");
         return code;
     }
@@ -25,10 +25,6 @@ internal static partial class Guard
             throw new DomainException($"{field} must be at most {maxLength} characters.");
         return text;
     }
-
-    // Mirrors the ck_*_code CHECK constraint in the database.
-    [GeneratedRegex("^[A-Z0-9]{3,20}$")]
-    private static partial Regex CodePattern();
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex Whitespace();

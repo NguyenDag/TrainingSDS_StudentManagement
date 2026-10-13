@@ -4,7 +4,9 @@ namespace StudentManagement.Domain.Teachers;
 
 public class Teacher : Person
 {
-    protected override int MinimumAge => 18;
+    public const int MinimumAgeYears = 18;
+
+    protected override int MinimumAge => MinimumAgeYears;
     public override string RoleName => "Teacher";
 
     /// <summary>For NHibernate.</summary>
