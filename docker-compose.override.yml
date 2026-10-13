@@ -1,0 +1,5 @@
+# Dev only: expose Postgres to host tools (DBeaver/pgAdmin). 5433 avoids clashing with a local Postgres.
+services:
+  db:
+    ports:
+      - "5433:5432"
