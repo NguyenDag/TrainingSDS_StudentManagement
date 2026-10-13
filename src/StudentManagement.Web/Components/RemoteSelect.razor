@@ -1,0 +1,50 @@
+@* Select whose options come from the server as the user types (lists can be too long to load whole). *@
+@typeparam TItem
+@inject GrpcErrorHandler Errors
+
+<Select TItem="TItem" TItemValue="int?"
+        DataSource="_options"
+        Value="Value" ValueChanged="ValueChanged" ValueExpression="ValueExpression"
+        ItemValue="@(item => IdOf(item))" ItemLabel="LabelOf"
+        EnableSearch OnSearch="@(text => _ = SearchAsync(text))" SearchDebounceMilliseconds="300"
+        FilterExpression="@((_, _) => true)"
+        AllowClear="AllowClear" Placeholder="@Placeholder" Style="@Style" />
+
+@code {
+    [Parameter] public int? Value { get; set; }
+    [Parameter] public EventCallback<int?> ValueChanged { get; set; }
+    // Passed through so a surrounding FormItem shows validation messages for the bound field.
+    [Parameter] public System.Linq.Expressions.Expression<Func<int?>>? ValueExpression { get; set; }
+    [Parameter] public bool AllowClear { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? Style { get; set; }
+
+    [Parameter, EditorRequired] public Func<string?, Task<IEnumerable<TItem>>> Search { get; set; } = null!;
+    [Parameter, EditorRequired] public Func<int, Task<TItem>> Fetch { get; set; } = null!;
+    [Parameter, EditorRequired] public Func<TItem, int> IdOf { get; set; } = null!;
+    [Parameter, EditorRequired] public Func<TItem, string> LabelOf { get; set; } = null!;
+
+    private List<TItem> _options = [];
+
+    protected override Task OnInitializedAsync() => SearchAsync(null);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // The current value may not be among the search results (e.g. opened from a link): fetch it.
+        if (Value is { } id && _options.All(o => IdOf(o) != id))
+            await Errors.RunAsync(async () => _options.Insert(0, await Fetch(id)));
+    }
+
+    private async Task SearchAsync(string? text)
+    {
+        await Errors.RunAsync(async () =>
+        {
+            var found = (await Search(string.IsNullOrWhiteSpace(text) ? null : text)).ToList();
+            // Keep the selected item so its label stays visible.
+            if (Value is { } id && found.All(o => IdOf(o) != id) && _options.FirstOrDefault(o => IdOf(o) == id) is { } selected)
+                found.Insert(0, selected);
+            _options = found;
+        });
+        StateHasChanged();
+    }
+}
