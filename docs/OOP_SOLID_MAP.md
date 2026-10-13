@@ -32,7 +32,7 @@ State chỉ đổi được qua method có kiểm tra; object không bao giờ r
 | [Person.cs:20](../src/StudentManagement.Domain/Common/Person.cs#L20) → [Student.cs:16](../src/StudentManagement.Domain/Students/Student.cs#L16) (16), [Teacher.cs:9](../src/StudentManagement.Domain/Teachers/Teacher.cs#L9) (18) | `MinimumAge` abstract, mỗi lớp con override. [Person.cs:48](../src/StudentManagement.Domain/Common/Person.cs#L48) gọi qua kiểu `Person` mà không biết lớp con nào (Template Method) |
 | [Person.cs:22](../src/StudentManagement.Domain/Common/Person.cs#L22) → [Student.cs:17](../src/StudentManagement.Domain/Students/Student.cs#L17), [Teacher.cs:10](../src/StudentManagement.Domain/Teachers/Teacher.cs#L10) | `RoleName` abstract, dùng trong thông báo lỗi và `ToString` |
 | [Person.cs:53](../src/StudentManagement.Domain/Common/Person.cs#L53) → [Student.cs:35](../src/StudentManagement.Domain/Students/Student.cs#L35) | `ToString()` override nhiều tầng, `Student` mở rộng bản của `Person` bằng `base.ToString()` |
-| [Entity.cs:12-26](../src/StudentManagement.Domain/Common/Entity.cs#L12-L26) | Override `Equals`/`GetHashCode` của `object`; `GetUnproxiedType()` virtual để proxy NHibernate (M4) trả đúng kiểu thật |
+| [Entity.cs:12-26](../src/StudentManagement.Domain/Common/Entity.cs#L12-L26) | Override `Equals`/`GetHashCode` của `object`; `GetUnproxiedType()` virtual để proxy lazy-load của NHibernate trả đúng kiểu thật |
 | Test: [PersonTests.cs:53](../tests/StudentManagement.Domain.Tests/PersonTests.cs#L53), [PersonTests.cs:104](../tests/StudentManagement.Domain.Tests/PersonTests.cs#L104) | Cùng ngày sinh 17 tuổi: `Student` hợp lệ, `Teacher` bị từ chối |
 
 ### Abstraction (trừu tượng)
@@ -46,7 +46,7 @@ State chỉ đổi được qua method có kiểm tra; object không bao giờ r
 
 ## SOLID (Bài 3)
 
-Đường đi của một use case: validator → app service → repository/unit of work (interface) → implementation (M3: in-memory trong test; M4: NHibernate).
+Đường đi của một use case: validator → app service → repository/unit of work (interface) → implementation (in-memory trong test của Application; NHibernate trong Infrastructure).
 
 ### S — Single Responsibility
 
@@ -60,8 +60,10 @@ Mỗi class chỉ có một lý do để thay đổi.
 | [DtoMappings.cs:12](../src/StudentManagement.Application/DtoMappings.cs#L12) | Hình dạng dữ liệu trả ra |
 | [Messages.cs:4](../src/StudentManagement.Application/Common/Messages.cs#L4) | Câu chữ tiếng Việt hiển thị cho người dùng |
 | [AppExceptions.cs:24](../src/StudentManagement.Application/Common/Exceptions/AppExceptions.cs#L24) | Mã lỗi ổn định cho client/log |
-| `IStudentRepository` + implementation (M4) | Cách truy vấn dữ liệu |
-| `IUnitOfWork` + implementation (M4) | Ranh giới transaction |
+| [StudentRepository.cs:10](../src/StudentManagement.Infrastructure/Persistence/Repositories/StudentRepository.cs#L10) | Cách truy vấn dữ liệu (NHibernate LINQ) |
+| [Mappings.cs](../src/StudentManagement.Infrastructure/Persistence/Mappings/Mappings.cs) | Ánh xạ class ↔ bảng |
+| [DbExceptionTranslator.cs:32](../src/StudentManagement.Infrastructure/Persistence/DbExceptionTranslator.cs#L32) | Dịch lỗi DB sang lỗi nghiệp vụ |
+| [UnitOfWork.cs:10](../src/StudentManagement.Infrastructure/Persistence/UnitOfWork.cs#L10) | Ranh giới transaction |
 
 ### O — Open/Closed
 
@@ -73,7 +75,9 @@ Mở rộng bằng cách thêm code mới, không sửa code đang chạy.
 | [PagedQuery.cs:10](../src/StudentManagement.Application/Common/PagedQuery.cs#L10) | Thêm loại danh sách mới = thêm một `record : PagedQuery`, quy tắc phân trang có sẵn |
 | [ValidationRules.cs:10](../src/StudentManagement.Application/Common/ValidationRules.cs#L10) | Validator mới ghép từ các rule có sẵn |
 | [AppExceptions.cs:7](../src/StudentManagement.Application/Common/Exceptions/AppExceptions.cs#L7) | Loại lỗi mới = thêm lớp con `AppException`; interceptor (M5) map theo kiểu |
-| *(M4)* | Sort: bảng `SortField → Expression` trong repository; tên cột: naming convention |
+| [StudentRepository.cs:13](../src/StudentManagement.Infrastructure/Persistence/Repositories/StudentRepository.cs#L13) | Sort: bảng `SortField → Expression`; thêm kiểu sắp xếp = thêm một dòng |
+| [SnakeCaseNamingConvention.cs:14](../src/StudentManagement.Infrastructure/Persistence/SnakeCaseNamingConvention.cs#L14) | Tên bảng/cột suy ra bằng convention; thêm property không phải khai báo tên cột |
+| M4 nói chung | Thêm cả tầng NHibernate mà **không sửa dòng nào** trong Application ([EndToEndTests.cs](../tests/StudentManagement.Infrastructure.Tests/EndToEndTests.cs) chạy chính các service của M3 trên PostgreSQL) |
 
 ### L — Liskov Substitution
 
@@ -81,7 +85,7 @@ Lớp con / implementation thay được cho kiểu cha mà không làm sai hàn
 
 | Ở đâu | Thể hiện |
 |-------|----------|
-| [RepositoryContractTests.cs](../tests/StudentManagement.Application.Tests/Repositories/RepositoryContractTests.cs) | Một bộ test hành vi chung cho **mọi** `IRepository<T>`: [InMemoryRepositoryContractTests.cs](../tests/StudentManagement.Application.Tests/Repositories/InMemoryRepositoryContractTests.cs) chạy nó trên bản in-memory; M4 chạy lại trên NHibernate |
+| [RepositoryContractTests.cs](../tests/StudentManagement.Application.Tests/Repositories/RepositoryContractTests.cs) | Một bộ test hành vi chung cho **mọi** `IRepository<T>`: [InMemoryRepositoryContractTests.cs](../tests/StudentManagement.Application.Tests/Repositories/InMemoryRepositoryContractTests.cs) chạy nó trên bản in-memory, [NhRepositoryContractTests.cs](../tests/StudentManagement.Infrastructure.Tests/NhRepositoryContractTests.cs) chạy **cùng bộ test** trên [Repository<T>](../src/StudentManagement.Infrastructure/Persistence/Repositories/Repository.cs#L11) (NHibernate) |
 | [Person.cs:41](../src/StudentManagement.Domain/Common/Person.cs#L41) | `Student`/`Teacher` dùng được ở mọi chỗ cần `Person`; lớp con chỉ đổi tham số (`MinimumAge`), không đổi luật |
 
 ### I — Interface Segregation
@@ -103,6 +107,7 @@ Tầng cao (Application) định nghĩa interface; tầng thấp (Infrastructure
 | [IStudentRepository.cs:7](../src/StudentManagement.Application/Students/IStudentRepository.cs#L7), [IUnitOfWork.cs:7](../src/StudentManagement.Application/Abstractions/IUnitOfWork.cs#L7) | Interface nằm ở Application, không phải ở Infrastructure |
 | [StudentAppService.cs:11-15](../src/StudentManagement.Application/Students/StudentAppService.cs#L11-L15) | Constructor nhận toàn interface; không `new` phụ thuộc nào |
 | [StudentManagement.Application.csproj](../src/StudentManagement.Application/StudentManagement.Application.csproj) | Chỉ reference Domain + FluentValidation, không có NHibernate |
+| [StudentRepository.cs:10](../src/StudentManagement.Infrastructure/Persistence/Repositories/StudentRepository.cs#L10), [DependencyInjection.cs:41](../src/StudentManagement.Infrastructure/DependencyInjection.cs#L41) | Infrastructure implement interface của Application và tự đăng ký qua `AddInfrastructure()`; mọi kiểu NHibernate đều `internal` |
 | *(M5)* | `GrpcServer/Program.cs` là composition root: `AddApplication()` + `AddInfrastructure()` |
 
 ### Dependency Injection
