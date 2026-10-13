@@ -5,7 +5,7 @@ namespace StudentManagement.Domain.Common;
 public abstract class Person : Entity
 {
     public const int FullNameMaxLength = 100;
-    private static readonly DateOnly EarliestDateOfBirth = new(1900, 1, 1);
+    public static readonly DateOnly EarliestDateOfBirth = new(1900, 1, 1);
 
     public virtual string Code { get; protected set; } = null!;
     public virtual string FullName { get; protected set; } = null!;

@@ -11,7 +11,9 @@ public class Student : Person
     public virtual string? Address { get; protected set; }
     public virtual Classroom Classroom { get; protected set; } = null!;
 
-    protected override int MinimumAge => 16;
+    public const int MinimumAgeYears = 16;
+
+    protected override int MinimumAge => MinimumAgeYears;
     public override string RoleName => "Student";
 
     /// <summary>For NHibernate.</summary>
