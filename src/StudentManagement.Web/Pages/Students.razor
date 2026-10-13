@@ -1,0 +1,140 @@
+@page "/"
+@page "/students"
+@using AntDesign.TableModels
+@inject StudentService.StudentServiceClient StudentClient
+@inject GrpcErrorHandler Errors
+@inject IMessageService Messages
+
+<PageTitle>@UiText.Students</PageTitle>
+
+<div class="page-toolbar">
+    <h2 style="margin: 0">@UiText.Students</h2>
+    <div class="spacer"></div>
+    <ClassroomSelect Value="_classroomId" ValueChanged="FilterByClassroomAsync" AllowClear
+                     Placeholder="@UiText.FilterByClassroom" Style="width: 300px" />
+    @* Typing filters by code prefix; Enter looks the exact code up. *@
+    <Search Placeholder="@UiText.SearchStudentCode" AllowClear Width="280px"
+            Value="@_codeText" ValueChanged="FilterByCodePrefixAsync" BindOnInput DebounceMilliseconds="400"
+            OnSearch="FindByExactCodeAsync" />
+    <Button Type="ButtonType.Primary" Icon="plus" OnClick="@(() => _modal?.ShowCreate(_classroomId))">@UiText.Add</Button>
+</div>
+
+<Table TItem="Student" DataSource="_items" Total="_total" @bind-PageIndex="_pageIndex" @bind-PageSize="_pageSize"
+       Loading="_loading" RemoteDataSource OnChange="OnTableChangeAsync" RowKey="s => s.Id">
+    <PropertyColumn Property="s => s.Code" Title="@UiText.StudentCode" Sortable />
+    @* Sorting by name = by Vietnamese given name (An < Ánh < Bình …), done by the database. *@
+    <PropertyColumn Property="s => s.FullName" Title="@UiText.FullName" Sortable />
+    <PropertyColumn Property="s => s.DateOfBirth" Title="@UiText.DateOfBirth" Sortable>@context.DateOfBirth.Display()</PropertyColumn>
+    <ActionColumn Title="@UiText.Address">@(context.HasAddress ? context.Address : "")</ActionColumn>
+    <ActionColumn Title="@UiText.Classroom">@context.Classroom.Name</ActionColumn>
+    <ActionColumn Title="@UiText.Teacher">@context.Classroom.Teacher.FullName</ActionColumn>
+    <ActionColumn Title="@UiText.Actions" Width="160">
+        <Button Type="ButtonType.Link" OnClick="@(() => _modal?.ShowEdit(context))">@UiText.Edit</Button>
+        <Popconfirm Title="@UiText.ConfirmDelete" OkText="@UiText.Yes" CancelText="@UiText.No" OnConfirm="@(() => DeleteAsync(context))">
+            <Button Type="ButtonType.Link" Danger>@UiText.Delete</Button>
+        </Popconfirm>
+    </ActionColumn>
+</Table>
+
+<StudentFormModal @ref="_modal" OnSaved="LoadAsync" />
+
+@code {
+    // Set by the "Sĩ số" link on the classrooms page.
+    [Parameter, SupplyParameterFromQuery(Name = "classroomId")] public int? ClassroomId { get; set; }
+
+    private StudentFormModal? _modal;
+    private IEnumerable<Student> _items = [];
+    private int _total;
+    private int _pageIndex = 1;
+    private int _pageSize = 10;
+    private bool _loading;
+    private string? _codeText;
+    private int? _classroomId;
+    private StudentSortField _sortBy;
+    private ProtoSortDirection _direction;
+    // Typing (debounced) and Enter can overlap; only the latest request may update the table.
+    private int _requestId;
+
+    protected override void OnParametersSet() => _classroomId = ClassroomId;
+
+    // Also fired by the table on first render, so this does the initial load.
+    private Task OnTableChangeAsync(QueryModel<Student> query)
+    {
+        (_sortBy, _direction) = query.ActiveSort() switch
+        {
+            ("Code", var d) => (StudentSortField.Code, d),
+            ("DateOfBirth", var d) => (StudentSortField.DateOfBirth, d),
+            ("FullName", var d) => (StudentSortField.Name, d),
+            _ => (StudentSortField.Name, ProtoSortDirection.Asc),
+        };
+        _pageIndex = query.PageIndex;
+        _pageSize = query.PageSize;
+        return LoadAsync();
+    }
+
+    private Task FilterByCodePrefixAsync(string text)
+    {
+        _codeText = text;
+        _pageIndex = 1;
+        return LoadAsync();
+    }
+
+    private Task FilterByClassroomAsync(int? classroomId)
+    {
+        _classroomId = classroomId;
+        _pageIndex = 1;
+        return LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var requestId = ++_requestId;
+        _loading = true;
+        var request = new ListStudentsRequest { Page = _pageIndex, PageSize = _pageSize, SortBy = _sortBy, Direction = _direction };
+        if (!string.IsNullOrWhiteSpace(_codeText)) request.CodePrefix = _codeText.Trim();
+        if (_classroomId is { } classroomId) request.ClassroomId = classroomId;
+
+        await Errors.RunAsync(async () =>
+        {
+            var response = await StudentClient.ListStudentsAsync(request);
+            if (requestId != _requestId) return;
+            _items = response.Items;
+            _total = response.PageInfo.TotalCount;
+        });
+        if (requestId == _requestId) _loading = false;
+    }
+
+    private async Task FindByExactCodeAsync(string code)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            await LoadAsync();
+            return;
+        }
+
+        var requestId = ++_requestId;
+        await Errors.RunAsync(async () =>
+        {
+            var student = await StudentClient.GetStudentByCodeAsync(new GetStudentByCodeRequest { Code = code.Trim() });
+            if (requestId != _requestId) return;
+            _items = [student];
+            _total = 1;
+            _pageIndex = 1;
+        }, error =>
+        {
+            if (error.Status != Grpc.Core.StatusCode.NotFound) return Task.FromResult(false);
+            _ = Messages.WarningAsync(UiText.StudentCodeNotFound);
+            return Task.FromResult(true);
+        });
+        _loading = false;
+    }
+
+    private async Task DeleteAsync(Student student)
+    {
+        if (await Errors.RunAsync(async () => await StudentClient.DeleteStudentAsync(new DeleteStudentRequest { Id = student.Id })))
+        {
+            _ = Messages.SuccessAsync(UiText.Deleted);
+            await LoadAsync();
+        }
+    }
+}
