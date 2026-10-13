@@ -1,0 +1,108 @@
+@page "/classrooms"
+@using AntDesign.TableModels
+@inject ClassroomService.ClassroomServiceClient ClassroomClient
+@inject GrpcErrorHandler Errors
+@inject IMessageService Messages
+
+<PageTitle>@UiText.Classrooms</PageTitle>
+
+<div class="page-toolbar">
+    <h2 style="margin: 0">@UiText.Classrooms</h2>
+    <div class="spacer"></div>
+    <TeacherSelect Value="_teacherId" ValueChanged="FilterByTeacherAsync" AllowClear
+                   Placeholder="@UiText.FilterByTeacher" Style="width: 260px" />
+    <Search Placeholder="@UiText.SearchClassroom" AllowClear OnSearch="SearchAsync" Width="260px" />
+    <Button Type="ButtonType.Primary" Icon="plus" OnClick="@(() => _modal?.ShowCreate(_teacherId))">@UiText.Add</Button>
+</div>
+
+<Table TItem="Classroom" DataSource="_items" Total="_total" @bind-PageIndex="_pageIndex" @bind-PageSize="_pageSize"
+       Loading="_loading" RemoteDataSource OnChange="OnTableChangeAsync" RowKey="c => c.Id">
+    <PropertyColumn Property="c => c.Code" Title="@UiText.Code" Sortable />
+    <PropertyColumn Property="c => c.Name" Title="@UiText.ClassroomName" Sortable />
+    <PropertyColumn Property="c => c.Subject" Title="@UiText.Subject" Sortable />
+    <ActionColumn Title="@UiText.Teacher">@context.Teacher.FullName</ActionColumn>
+    <PropertyColumn Property="c => c.StudentCount" Title="@UiText.StudentCount">
+        <a href="@($"students?classroomId={context.Id}")">@context.StudentCount</a>
+    </PropertyColumn>
+    <ActionColumn Title="@UiText.Actions" Width="160">
+        <Button Type="ButtonType.Link" OnClick="@(() => _modal?.ShowEdit(context))">@UiText.Edit</Button>
+        <Popconfirm Title="@UiText.ConfirmDelete" OkText="@UiText.Yes" CancelText="@UiText.No" OnConfirm="@(() => DeleteAsync(context))">
+            <Button Type="ButtonType.Link" Danger>@UiText.Delete</Button>
+        </Popconfirm>
+    </ActionColumn>
+</Table>
+
+<ClassroomFormModal @ref="_modal" OnSaved="LoadAsync" />
+
+@code {
+    // Set by the "Số lớp" link on the teachers page.
+    [Parameter, SupplyParameterFromQuery(Name = "teacherId")] public int? TeacherId { get; set; }
+
+    private ClassroomFormModal? _modal;
+    private IEnumerable<Classroom> _items = [];
+    private int _total;
+    private int _pageIndex = 1;
+    private int _pageSize = 10;
+    private bool _loading;
+    private string? _keyword;
+    private int? _teacherId;
+    private ClassroomSortField _sortBy;
+    private ProtoSortDirection _direction;
+
+    protected override void OnParametersSet() => _teacherId = TeacherId;
+
+    // Also fired by the table on first render, so this does the initial load.
+    private Task OnTableChangeAsync(QueryModel<Classroom> query)
+    {
+        (_sortBy, _direction) = query.ActiveSort() switch
+        {
+            ("Name", var d) => (ClassroomSortField.Name, d),
+            ("Subject", var d) => (ClassroomSortField.Subject, d),
+            ("Code", var d) => (ClassroomSortField.Code, d),
+            _ => (ClassroomSortField.Code, ProtoSortDirection.Asc),
+        };
+        _pageIndex = query.PageIndex;
+        _pageSize = query.PageSize;
+        return LoadAsync();
+    }
+
+    private Task SearchAsync(string keyword)
+    {
+        _keyword = string.IsNullOrWhiteSpace(keyword) ? null : keyword;
+        _pageIndex = 1;
+        return LoadAsync();
+    }
+
+    private Task FilterByTeacherAsync(int? teacherId)
+    {
+        _teacherId = teacherId;
+        _pageIndex = 1;
+        return LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var request = new ListClassroomsRequest { Page = _pageIndex, PageSize = _pageSize, SortBy = _sortBy, Direction = _direction };
+        if (_keyword is not null) request.Keyword = _keyword;
+        if (_teacherId is { } teacherId) request.TeacherId = teacherId;
+
+        await Errors.RunAsync(async () =>
+        {
+            var response = await ClassroomClient.ListClassroomsAsync(request);
+            _items = response.Items;
+            _total = response.PageInfo.TotalCount;
+        });
+        _loading = false;
+    }
+
+    private async Task DeleteAsync(Classroom classroom)
+    {
+        // The server refuses while students remain and explains why (FAILED_PRECONDITION).
+        if (await Errors.RunAsync(async () => await ClassroomClient.DeleteClassroomAsync(new DeleteClassroomRequest { Id = classroom.Id })))
+        {
+            _ = Messages.SuccessAsync(UiText.Deleted);
+            await LoadAsync();
+        }
+    }
+}

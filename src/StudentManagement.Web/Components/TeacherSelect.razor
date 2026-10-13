@@ -1,0 +1,48 @@
+@* Teacher picker that searches on the server as the user types. *@
+@inject TeacherService.TeacherServiceClient TeacherClient
+@inject GrpcErrorHandler Errors
+
+<Select TItem="Teacher" TItemValue="int?"
+        DataSource="_options"
+        Value="Value" ValueChanged="ValueChanged" ValueExpression="ValueExpression"
+        ItemValue="t => t.Id" ItemLabel="@(t => $"{t.Code} – {t.FullName}")"
+        EnableSearch OnSearch="@(text => _ = SearchAsync(text))" SearchDebounceMilliseconds="300"
+        FilterExpression="@((_, _) => true)"
+        AllowClear="AllowClear" Placeholder="@Placeholder" Style="@Style" />
+
+@code {
+    [Parameter] public int? Value { get; set; }
+    [Parameter] public EventCallback<int?> ValueChanged { get; set; }
+    // Passed through so a surrounding FormItem shows validation messages for the bound field.
+    [Parameter] public System.Linq.Expressions.Expression<Func<int?>>? ValueExpression { get; set; }
+    [Parameter] public bool AllowClear { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? Style { get; set; }
+
+    private List<Teacher> _options = [];
+
+    protected override Task OnInitializedAsync() => SearchAsync("");
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // The current value may not be among the search results (e.g. opened from a link): fetch it.
+        if (Value is { } id && _options.All(t => t.Id != id))
+            await Errors.RunAsync(async () => _options.Insert(0, await TeacherClient.GetTeacherAsync(new GetTeacherRequest { Id = id })));
+    }
+
+    private async Task SearchAsync(string text)
+    {
+        var request = new ListTeachersRequest { PageSize = 20 };
+        if (!string.IsNullOrWhiteSpace(text)) request.Keyword = text;
+
+        await Errors.RunAsync(async () =>
+        {
+            var found = (await TeacherClient.ListTeachersAsync(request)).Items.ToList();
+            // Keep the selected teacher so its label stays visible.
+            if (Value is { } id && found.All(t => t.Id != id) && _options.FirstOrDefault(t => t.Id == id) is { } selected)
+                found.Insert(0, selected);
+            _options = found;
+        });
+        StateHasChanged();
+    }
+}
