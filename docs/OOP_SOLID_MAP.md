@@ -101,6 +101,7 @@ Không ép ai phụ thuộc vào method mình không dùng.
 | [IReadRepository.cs:9](../src/StudentManagement.Application/Abstractions/IReadRepository.cs#L9) tách khỏi [IRepository.cs:6](../src/StudentManagement.Application/Abstractions/IRepository.cs#L6) | `StudentAppService` chỉ cần tra lớp nên nhận [`IReadRepository<Classroom>`](../src/StudentManagement.Application/Students/StudentAppService.cs#L13), không thể sửa/xóa lớp; tương tự [`ClassroomAppService`](../src/StudentManagement.Application/Classrooms/ClassroomAppService.cs#L13) với `IReadRepository<Teacher>` |
 | [IUnitOfWork.cs:7](../src/StudentManagement.Application/Abstractions/IUnitOfWork.cs#L7) | Chỉ một method `CommitAsync`; service không thấy `ISession`/`ITransaction` |
 | `I*Repository` | Mỗi repository chuyên biệt chỉ thêm đúng query use case của nó cần (`GetByCodeAsync` chỉ có ở sinh viên) |
+| [IReportQueries.cs:7](../src/StudentManagement.Application/Reports/IReportQueries.cs#L7) | Báo cáo (GROUP BY nhiều bảng) tách khỏi repository CRUD; [ReportQueries.cs](../src/StudentManagement.Infrastructure/Persistence/ReportQueries.cs) không phải implement Add/Update/Delete vô nghĩa |
 
 ### D — Dependency Inversion
 
