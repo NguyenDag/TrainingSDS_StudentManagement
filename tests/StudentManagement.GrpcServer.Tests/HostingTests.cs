@@ -1,3 +1,4 @@
+using Grpc.Core;
 using StudentManagement.Contracts.V1;
 using StudentManagement.Infrastructure.Tests;
 
@@ -55,5 +56,14 @@ public class HealthOutageTests : IAsyncLifetime
         var response = await client.GetAsync("/healthz");
         ((int)response.StatusCode).ShouldBe(503);
         (await response.Content.ReadAsStringAsync()).ShouldBe("Unhealthy");
+
+        // A call during the outage fails as INTERNAL and is logged with its exception…
+        using var channel = app.CreateChannel();
+        (await Should.ThrowAsync<RpcException>(new StudentService.StudentServiceClient(channel)
+            .ListStudentsAsync(new ListStudentsRequest()).ResponseAsync)).StatusCode.ShouldBe(StatusCode.Internal);
+        app.Logs.Messages.ShouldContain(m => m.Contains("Unhandled exception"));
+
+        // …yet no log line, exception text included, ever reveals the database password.
+        app.Logs.Messages.ShouldNotContain(m => m.Contains(DatabaseFixture.AppPassword) || m.Contains("Password=", StringComparison.OrdinalIgnoreCase));
     }
 }
