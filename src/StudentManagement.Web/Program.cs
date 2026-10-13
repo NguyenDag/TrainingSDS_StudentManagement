@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using StudentManagement.Contracts.V1;
 using StudentManagement.Web;
+using StudentManagement.Web.Services;
 
 var vietnamese = new CultureInfo("vi-VN");
 CultureInfo.DefaultThreadCurrentCulture = vietnamese;
@@ -15,6 +16,7 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddAntDesign();
+builder.Services.AddScoped<GrpcErrorHandler>();
 
 // One channel for the app's lifetime. Empty GrpcBaseUrl = same origin (nginx proxies gRPC-Web in Docker).
 builder.Services.AddSingleton(_ =>
