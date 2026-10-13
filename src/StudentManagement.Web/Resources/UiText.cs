@@ -6,6 +6,7 @@ public static class UiText
     public const string AppName = "Quản lý sinh viên";
 
     // Menu / pages
+    public const string Reports = "Báo cáo";
     public const string Students = "Sinh viên";
     public const string Classrooms = "Lớp học";
     public const string Teachers = "Giáo viên";
@@ -55,6 +56,18 @@ public static class UiText
     public const string SelectClassroom = "Chọn lớp (gõ để tìm)";
     public const string SelectTeacher = "Chọn giáo viên (gõ để tìm)";
     public const string SelectDate = "dd/MM/yyyy";
+
+    // Dashboard
+    public const string TotalStudents = "Tổng số sinh viên";
+    public const string TotalClassrooms = "Tổng số lớp học";
+    public const string TotalTeachers = "Tổng số giáo viên";
+    public const string ChartStudentsByClassroom = "Sinh viên theo lớp";
+    public const string ChartStudentsBySubject = "Sinh viên theo môn học";
+    public const string ChartStudentsByAgeGroup = "Sinh viên theo nhóm tuổi";
+    public const string ChartClassroomsByTeacher = "Số lớp theo giáo viên";
+    public const string StudentsAxis = "Số sinh viên";
+    public const string ClassroomsAxis = "Số lớp";
+    public const string NoData = "Chưa có dữ liệu";
 
     // Feedback
     public const string Saved = "Đã lưu.";

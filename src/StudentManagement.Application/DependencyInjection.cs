@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using StudentManagement.Application.Classrooms;
+using StudentManagement.Application.Reports;
 using StudentManagement.Application.Students;
 using StudentManagement.Application.Teachers;
 
@@ -15,6 +16,7 @@ public static class DependencyInjection
         services.AddScoped<IStudentAppService, StudentAppService>();
         services.AddScoped<IClassroomAppService, ClassroomAppService>();
         services.AddScoped<ITeacherAppService, TeacherAppService>();
+        services.AddScoped<IReportAppService, ReportAppService>();
 
         // Validators hold no state, so one instance can serve every request.
         services.AddValidatorsFromAssemblyContaining<StudentInputValidator>(ServiceLifetime.Singleton);

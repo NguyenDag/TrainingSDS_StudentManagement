@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using StudentManagement.Application.Abstractions;
 using StudentManagement.Application.Classrooms;
+using StudentManagement.Application.Reports;
 using StudentManagement.Application.Students;
 using StudentManagement.Application.Teachers;
 using StudentManagement.Application.Tests.Fakes;
@@ -23,6 +24,7 @@ public class DependencyInjectionTests
         services.AddScoped<IReadRepository<Classroom>>(_ => db.Classrooms);
         services.AddScoped<IReadRepository<Teacher>>(_ => db.Teachers);
         services.AddScoped<IUnitOfWork>(_ => db.UnitOfWork);
+        services.AddScoped<IReportQueries, NoReportQueries>();
 
         // ValidateScopes catches a singleton capturing a scoped dependency.
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
@@ -31,5 +33,11 @@ public class DependencyInjectionTests
         scope.ServiceProvider.GetRequiredService<IStudentAppService>().ShouldBeOfType<StudentAppService>();
         scope.ServiceProvider.GetRequiredService<IClassroomAppService>().ShouldBeOfType<ClassroomAppService>();
         scope.ServiceProvider.GetRequiredService<ITeacherAppService>().ShouldBeOfType<TeacherAppService>();
+        scope.ServiceProvider.GetRequiredService<IReportAppService>().ShouldBeOfType<ReportAppService>();
+    }
+
+    private sealed class NoReportQueries : IReportQueries
+    {
+        public Task<ReportData> GetAsync(CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 }

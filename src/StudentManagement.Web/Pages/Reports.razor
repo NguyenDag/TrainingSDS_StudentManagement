@@ -1,0 +1,128 @@
+@page "/"
+@page "/reports"
+@using AntDesign.Charts
+@inject ReportService.ReportServiceClient ReportClient
+@inject GrpcErrorHandler Errors
+@inject NavigationManager Navigation
+
+<PageTitle>@UiText.Reports</PageTitle>
+
+<div class="page-toolbar">
+    <h2 style="margin: 0">@UiText.Reports</h2>
+</div>
+
+@if (_dashboard is null)
+{
+    <div class="page-loading"><Spin /></div>
+}
+else
+{
+    <Row Gutter="16">
+        <AntDesign.Col Xs="24" Md="8"><Card><Statistic TValue="int" Title="@UiText.TotalStudents" Value="_dashboard.TotalStudents" /></Card></AntDesign.Col>
+        <AntDesign.Col Xs="24" Md="8"><Card><Statistic TValue="int" Title="@UiText.TotalClassrooms" Value="_dashboard.TotalClassrooms" /></Card></AntDesign.Col>
+        <AntDesign.Col Xs="24" Md="8"><Card><Statistic TValue="int" Title="@UiText.TotalTeachers" Value="_dashboard.TotalTeachers" /></Card></AntDesign.Col>
+    </Row>
+
+    <Row Gutter="16" Class="chart-row">
+        <AntDesign.Col Xs="24" Lg="12">
+            <Card Title="@UiText.ChartStudentsByClassroom">
+                @if (HasData(_dashboard.StudentsByClassroom))
+                {
+                    <AntDesign.Charts.Column Data="Points(_dashboard.StudentsByClassroom)" Config="StudentsByClassroomChart" />
+                }
+                else
+                {
+                    <Empty Description="@UiText.NoData" />
+                }
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Xs="24" Lg="12">
+            <Card Title="@UiText.ChartStudentsBySubject">
+                @if (HasData(_dashboard.StudentsBySubject))
+                {
+                    <AntDesign.Charts.Pie Data="Points(_dashboard.StudentsBySubject)" Config="StudentsBySubjectChart" />
+                }
+                else
+                {
+                    <Empty Description="@UiText.NoData" />
+                }
+            </Card>
+        </AntDesign.Col>
+    </Row>
+
+    <Row Gutter="16" Class="chart-row">
+        <AntDesign.Col Xs="24" Lg="12">
+            <Card Title="@UiText.ChartStudentsByAgeGroup">
+                @if (HasData(_dashboard.StudentsByAgeGroup))
+                {
+                    <AntDesign.Charts.Bar Data="Points(_dashboard.StudentsByAgeGroup)" Config="StudentsByAgeGroupChart" />
+                }
+                else
+                {
+                    <Empty Description="@UiText.NoData" />
+                }
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Xs="24" Lg="12">
+            <Card Title="@UiText.ChartClassroomsByTeacher">
+                @if (HasData(_dashboard.ClassroomsByTeacher))
+                {
+                    <AntDesign.Charts.Column Data="Points(_dashboard.ClassroomsByTeacher)" Config="ClassroomsByTeacherChart" />
+                }
+                else
+                {
+                    <Empty Description="@UiText.NoData" />
+                }
+            </Card>
+        </AntDesign.Col>
+    </Row>
+}
+
+@code {
+    private const int ChartHeight = 300;
+
+    // Charts read plain objects; "label"/"count" are the field names the configs below refer to.
+    private static readonly ColumnConfig StudentsByClassroomChart = new()
+    {
+        XField = "label", YField = "count", Height = ChartHeight, AutoFit = true,
+        Meta = new { count = new { alias = UiText.StudentsAxis } },
+    };
+
+    private static readonly PieConfig StudentsBySubjectChart = new()
+    {
+        AngleField = "count", ColorField = "label", Radius = 0.8, Height = ChartHeight, AutoFit = true,
+        Label = new PieLabelConfig { Type = "outer" },
+        Meta = new { count = new { alias = UiText.StudentsAxis } },
+    };
+
+    private static readonly BarConfig StudentsByAgeGroupChart = new()
+    {
+        XField = "count", YField = "label", Height = ChartHeight, AutoFit = true,
+        Meta = new { count = new { alias = UiText.StudentsAxis } },
+    };
+
+    private static readonly ColumnConfig ClassroomsByTeacherChart = new()
+    {
+        XField = "label", YField = "count", Height = ChartHeight, AutoFit = true,
+        // Counts are tiny (a teacher has a few classes): without this the axis shows 0.5, 1.5 …
+        YAxis = new ValueAxis { TickInterval = 1 },
+        Meta = new { count = new { alias = UiText.ClassroomsAxis } },
+    };
+
+    private DashboardResponse? _dashboard;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // "/" is an alias; move to /reports so the menu highlights the right item.
+        if (Navigation.ToBaseRelativePath(Navigation.Uri).Length == 0)
+            Navigation.NavigateTo("reports", replace: true);
+
+        await Errors.RunAsync(async () => _dashboard = await ReportClient.GetDashboardAsync(new GetDashboardRequest()));
+    }
+
+    // All-zero series (e.g. classrooms exist but no students yet) would draw an empty chart.
+    private static bool HasData(IEnumerable<CountByLabel> series) => series.Any(c => c.Count > 0);
+
+    private static object Points(IEnumerable<CountByLabel> series) =>
+        series.Select(c => new { label = c.Label, count = c.Count }).ToList();
+}

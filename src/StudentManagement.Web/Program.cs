@@ -32,5 +32,6 @@ builder.Services.AddSingleton(_ =>
 builder.Services.AddSingleton(sp => new StudentService.StudentServiceClient(sp.GetRequiredService<GrpcChannel>()));
 builder.Services.AddSingleton(sp => new ClassroomService.ClassroomServiceClient(sp.GetRequiredService<GrpcChannel>()));
 builder.Services.AddSingleton(sp => new TeacherService.TeacherServiceClient(sp.GetRequiredService<GrpcChannel>()));
+builder.Services.AddSingleton(sp => new ReportService.ReportServiceClient(sp.GetRequiredService<GrpcChannel>()));
 
 await builder.Build().RunAsync();

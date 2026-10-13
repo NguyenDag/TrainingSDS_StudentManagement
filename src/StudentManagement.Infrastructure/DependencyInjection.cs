@@ -7,6 +7,7 @@ using NHibernate;
 using NHibernate.Tool.hbm2ddl;
 using StudentManagement.Application.Abstractions;
 using StudentManagement.Application.Classrooms;
+using StudentManagement.Application.Reports;
 using StudentManagement.Application.Students;
 using StudentManagement.Application.Teachers;
 using StudentManagement.Domain.Classrooms;
@@ -43,6 +44,7 @@ public static class DependencyInjection
         services.AddScoped<ITeacherRepository, TeacherRepository>();
         services.AddScoped<IReadRepository<Classroom>>(sp => sp.GetRequiredService<IClassroomRepository>());
         services.AddScoped<IReadRepository<Teacher>>(sp => sp.GetRequiredService<ITeacherRepository>());
+        services.AddScoped<IReportQueries, ReportQueries>();
         return services;
     }
 

@@ -108,3 +108,12 @@ code {
 .page-toolbar .spacer {
     flex: 1;
 }
+
+.chart-row {
+    margin-top: 16px;
+}
+
+.page-loading {
+    text-align: center;
+    padding: 48px;
+}

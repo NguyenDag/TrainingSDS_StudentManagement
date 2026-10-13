@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="AntDesign" />
+    <PackageReference Include="AntDesign.Charts" />
     <PackageReference Include="Google.Protobuf" />
     <PackageReference Include="Grpc.Net.Client" />
     <PackageReference Include="Grpc.Net.Client.Web" />
