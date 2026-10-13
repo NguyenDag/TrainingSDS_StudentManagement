@@ -1,0 +1,89 @@
+@inject TeacherService.TeacherServiceClient TeacherClient
+@inject GrpcErrorHandler Errors
+@inject IMessageService Messages
+@inject ConfirmService Confirm
+
+<Modal Title="@(_id is null ? UiText.AddTeacher : UiText.EditTeacher)"
+       Visible="_visible"
+       OnOk="@(() => _form?.Submit())"
+       OnCancel="@(() => _visible = false)"
+       ConfirmLoading="_saving"
+       OkText="@UiText.Save"
+       CancelText="@UiText.Cancel"
+       DestroyOnClose>
+    <Form @ref="_form" Model="_model" Layout="FormLayout.Vertical" OnFinish="SaveAsync" Validator="FormValidators.DataAnnotations">
+        <FormItem Label="@UiText.Code">
+            <Input @bind-Value="context.Code" />
+        </FormItem>
+        <FormItem Label="@UiText.FullName">
+            <Input @bind-Value="context.FullName" />
+        </FormItem>
+        <FormItem Label="@UiText.DateOfBirth">
+            <DatePicker @bind-Value="context.DateOfBirth" Format="@UiText.DateFormat" Placeholder="@UiText.SelectDate" Style="width: 100%" />
+        </FormItem>
+    </Form>
+</Modal>
+
+@code {
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private Form<TeacherFormModel>? _form;
+    private TeacherFormModel _model = new();
+    private int? _id;
+    private int _version;
+    private bool _visible;
+    private bool _saving;
+
+    public void ShowCreate()
+    {
+        _id = null;
+        _model = new TeacherFormModel();
+        _visible = true;
+        StateHasChanged();
+    }
+
+    public void ShowEdit(Teacher teacher)
+    {
+        _id = teacher.Id;
+        _version = teacher.Version;
+        _model = new TeacherFormModel();
+        _model.Load(teacher);
+        _visible = true;
+        StateHasChanged();
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        var saved = await Errors.RunAsync(async () =>
+        {
+            if (_id is { } id)
+                await TeacherClient.UpdateTeacherAsync(_model.ToUpdateRequest(id, _version));
+            else
+                await TeacherClient.CreateTeacherAsync(_model.ToCreateRequest());
+        }, HandleErrorAsync);
+        _saving = false;
+        if (!saved) return;
+
+        _visible = false;
+        _ = Messages.SuccessAsync(UiText.Saved);
+        await OnSaved.InvokeAsync();
+    }
+
+    private async Task<bool> HandleErrorAsync(ServerError error)
+    {
+        // Someone saved this teacher after the form was opened: offer to load their version.
+        if (error.Status == Grpc.Core.StatusCode.Aborted && _id is { } id)
+        {
+            if (await Confirm.Show(UiText.StaleReloadQuestion, UiText.StaleTitle, ConfirmButtons.YesNo) == ConfirmResult.Yes)
+                await Errors.RunAsync(async () =>
+                {
+                    var latest = await TeacherClient.GetTeacherAsync(new GetTeacherRequest { Id = id });
+                    _version = latest.Version;
+                    _model.Load(latest);
+                });
+            return true;
+        }
+        return await GrpcErrorHandler.ShowOnForm(_form)(error);
+    }
+}

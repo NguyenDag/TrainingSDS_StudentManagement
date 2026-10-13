@@ -1,0 +1,91 @@
+@page "/teachers"
+@using AntDesign.TableModels
+@inject TeacherService.TeacherServiceClient TeacherClient
+@inject GrpcErrorHandler Errors
+@inject IMessageService Messages
+
+<PageTitle>@UiText.Teachers</PageTitle>
+
+<div class="page-toolbar">
+    <h2 style="margin: 0">@UiText.Teachers</h2>
+    <div class="spacer"></div>
+    <Search Placeholder="@UiText.SearchTeacher" AllowClear OnSearch="SearchAsync" Width="280px" />
+    <Button Type="ButtonType.Primary" Icon="plus" OnClick="@(() => _modal?.ShowCreate())">@UiText.Add</Button>
+</div>
+
+<Table TItem="Teacher" DataSource="_items" Total="_total" @bind-PageIndex="_pageIndex" @bind-PageSize="_pageSize"
+       Loading="_loading" RemoteDataSource OnChange="OnTableChangeAsync" RowKey="t => t.Id">
+    <PropertyColumn Property="t => t.Code" Title="@UiText.Code" Sortable />
+    <PropertyColumn Property="t => t.FullName" Title="@UiText.FullName" Sortable />
+    <PropertyColumn Property="t => t.DateOfBirth" Title="@UiText.DateOfBirth" Sortable>@context.DateOfBirth.Display()</PropertyColumn>
+    <ActionColumn Title="@UiText.Age">@context.DateOfBirth.AgeToday()</ActionColumn>
+    <PropertyColumn Property="t => t.ClassroomCount" Title="@UiText.ClassroomCount">
+        <a href="@($"classrooms?teacherId={context.Id}")">@context.ClassroomCount</a>
+    </PropertyColumn>
+    <ActionColumn Title="@UiText.Actions" Width="160">
+        <Button Type="ButtonType.Link" OnClick="@(() => _modal?.ShowEdit(context))">@UiText.Edit</Button>
+        <Popconfirm Title="@UiText.ConfirmDelete" OkText="@UiText.Yes" CancelText="@UiText.No" OnConfirm="@(() => DeleteAsync(context))">
+            <Button Type="ButtonType.Link" Danger>@UiText.Delete</Button>
+        </Popconfirm>
+    </ActionColumn>
+</Table>
+
+<TeacherFormModal @ref="_modal" OnSaved="LoadAsync" />
+
+@code {
+    private TeacherFormModal? _modal;
+    private IEnumerable<Teacher> _items = [];
+    private int _total;
+    private int _pageIndex = 1;
+    private int _pageSize = 10;
+    private bool _loading;
+    private string? _keyword;
+    private TeacherSortField _sortBy;
+    private ProtoSortDirection _direction;
+
+    // Also fired by the table on first render, so this does the initial load.
+    private Task OnTableChangeAsync(QueryModel<Teacher> query)
+    {
+        (_sortBy, _direction) = query.ActiveSort() switch
+        {
+            ("Code", var d) => (TeacherSortField.Code, d),
+            ("DateOfBirth", var d) => (TeacherSortField.DateOfBirth, d),
+            ("FullName", var d) => (TeacherSortField.Name, d),
+            _ => (TeacherSortField.Name, ProtoSortDirection.Asc),
+        };
+        _pageIndex = query.PageIndex;
+        _pageSize = query.PageSize;
+        return LoadAsync();
+    }
+
+    private Task SearchAsync(string keyword)
+    {
+        _keyword = string.IsNullOrWhiteSpace(keyword) ? null : keyword;
+        _pageIndex = 1;
+        return LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var request = new ListTeachersRequest { Page = _pageIndex, PageSize = _pageSize, SortBy = _sortBy, Direction = _direction };
+        if (_keyword is not null) request.Keyword = _keyword;
+
+        await Errors.RunAsync(async () =>
+        {
+            var response = await TeacherClient.ListTeachersAsync(request);
+            _items = response.Items;
+            _total = response.PageInfo.TotalCount;
+        });
+        _loading = false;
+    }
+
+    private async Task DeleteAsync(Teacher teacher)
+    {
+        if (await Errors.RunAsync(async () => await TeacherClient.DeleteTeacherAsync(new DeleteTeacherRequest { Id = teacher.Id })))
+        {
+            _ = Messages.SuccessAsync(UiText.Deleted);
+            await LoadAsync();
+        }
+    }
+}
