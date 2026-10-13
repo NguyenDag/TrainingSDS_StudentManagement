@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace StudentManagement.Domain.Common;
 
-/// <summary>Rules for the business code (Mã số) shared by students, classrooms and teachers.</summary>
+/// <summary>Rules for the business code shared by students, classrooms and teachers.</summary>
 public static partial class EntityCode
 {
     public static string Normalize(string? value) => value?.Trim().ToUpperInvariant() ?? string.Empty;
