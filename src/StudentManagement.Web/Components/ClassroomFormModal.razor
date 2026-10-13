@@ -77,7 +77,7 @@
     {
         if (error.Status == Grpc.Core.StatusCode.Aborted && _id is { } id)
         {
-            if (await Confirm.Show(UiText.StaleReloadQuestion, UiText.StaleTitle, ConfirmButtons.YesNo) == ConfirmResult.Yes)
+            if (await Confirm.Show(UiText.StaleReloadQuestion, UiText.StaleTitle, ConfirmButtons.OKCancel) == ConfirmResult.OK)
                 await Errors.RunAsync(async () =>
                 {
                     var latest = await ClassroomClient.GetClassroomAsync(new GetClassroomRequest { Id = id });
