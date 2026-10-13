@@ -7,17 +7,23 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Grpc.Net.Client.Web" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Shouldly" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="Shouldly" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\StudentManagement.GrpcServer\StudentManagement.GrpcServer.csproj" />
+    <!-- Reuses the PostgreSQL container fixture built from db/init. -->
+    <ProjectReference Include="..\StudentManagement.Infrastructure.Tests\StudentManagement.Infrastructure.Tests.csproj" />
   </ItemGroup>
 
 </Project>

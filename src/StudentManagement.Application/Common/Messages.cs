@@ -22,6 +22,11 @@ public static class Messages
     public const string DateOfBirthTooEarly = "Ngày sinh không được trước năm 1900.";
     public const string StudentTooYoung = "Sinh viên phải từ {MinimumAge} tuổi trở lên.";
     public const string TeacherTooYoung = "Giáo viên phải từ {MinimumAge} tuổi trở lên.";
+    public const string DateInvalid = "Ngày không hợp lệ.";
+
+    // Generic outcomes
+    public const string ValidationFailed = "Dữ liệu không hợp lệ.";
+    public const string InternalError = "Lỗi hệ thống, vui lòng thử lại sau.";
 
     // Business errors
     public const string StudentNotFound = "Không tìm thấy sinh viên.";

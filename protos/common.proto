@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package studentmanagement.v1;
+
+option csharp_namespace = "StudentManagement.Contracts.V1";
+
+// A calendar date with no time zone. google.protobuf.Timestamp would shift a birthday by a day
+// when client and server sit in different time zones.
+message Date {
+  int32 year = 1;
+  int32 month = 2;
+  int32 day = 3;
+}
+
+enum SortDirection {
+  SORT_DIRECTION_UNSPECIFIED = 0; // treated as ascending
+  SORT_DIRECTION_ASC = 1;
+  SORT_DIRECTION_DESC = 2;
+}
+
+message PageInfo {
+  int32 page = 1;
+  int32 page_size = 2;
+  int32 total_count = 3;
+}
+
+message TeacherSummary {
+  int32 id = 1;
+  string code = 2;
+  string full_name = 3;
+}
+
+message ClassroomSummary {
+  int32 id = 1;
+  string code = 2;
+  string name = 3;
+  string subject = 4;
+  TeacherSummary teacher = 5;
+}

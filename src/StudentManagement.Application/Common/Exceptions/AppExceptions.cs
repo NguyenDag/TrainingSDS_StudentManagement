@@ -23,6 +23,9 @@ public sealed class ConcurrencyException()
 
 public static class ErrorCodes
 {
+    public const string ValidationFailed = "VALIDATION_FAILED";
+    public const string InternalError = "INTERNAL_ERROR";
+
     public const string StudentNotFound = "STUDENT_NOT_FOUND";
     public const string ClassroomNotFound = "CLASSROOM_NOT_FOUND";
     public const string TeacherNotFound = "TEACHER_NOT_FOUND";

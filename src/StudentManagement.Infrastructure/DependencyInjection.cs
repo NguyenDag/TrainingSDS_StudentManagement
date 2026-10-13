@@ -1,5 +1,8 @@
+using System.Data.Common;
+using System.Net.Sockets;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NHibernate;
 using NHibernate.Tool.hbm2ddl;
 using StudentManagement.Application.Abstractions;
@@ -49,4 +52,35 @@ public static class DependencyInjection
     /// </summary>
     public static void ValidateDatabaseSchema(this IServiceProvider services) =>
         new SchemaValidator(services.GetRequiredService<NHConfiguration>()).Validate();
+
+    /// <summary>
+    /// <see cref="ValidateDatabaseSchema"/> that first waits for the database, which may still be starting
+    /// (docker compose). Connection failures are retried; a real mismatch fails at once.
+    /// </summary>
+    public static async Task ValidateDatabaseSchemaAsync(
+        this IServiceProvider services, int maxAttempts = 10, TimeSpan? delay = null, CancellationToken cancellationToken = default)
+    {
+        var logger = services.GetRequiredService<Microsoft.Extensions.Logging.ILoggerFactory>().CreateLogger(typeof(DependencyInjection));
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                services.ValidateDatabaseSchema();
+                return;
+            }
+            catch (Exception exception) when (attempt < maxAttempts && IsConnectionFailure(exception))
+            {
+                logger.LogWarning("Database not reachable yet (attempt {Attempt}/{MaxAttempts}): {Reason}",
+                    attempt, maxAttempts, exception.GetBaseException().Message);
+                await Task.Delay(delay ?? TimeSpan.FromSeconds(3), cancellationToken);
+            }
+        }
+    }
+
+    private static bool IsConnectionFailure(Exception? exception)
+    {
+        for (; exception is not null; exception = exception.InnerException)
+            if (exception is DbException or SocketException) return true;
+        return false;
+    }
 }

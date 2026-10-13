@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package studentmanagement.v1;
+
+option csharp_namespace = "StudentManagement.Contracts.V1";
+
+import "common.proto";
+import "google/protobuf/empty.proto";
+
+service StudentService {
+  // Lists, sorts and filters students in one call.
+  rpc ListStudents(ListStudentsRequest) returns (ListStudentsResponse);
+  rpc GetStudent(GetStudentRequest) returns (Student);
+  // Exact, case-insensitive lookup by student code.
+  rpc GetStudentByCode(GetStudentByCodeRequest) returns (Student);
+  rpc CreateStudent(CreateStudentRequest) returns (Student);
+  rpc UpdateStudent(UpdateStudentRequest) returns (Student);
+  rpc DeleteStudent(DeleteStudentRequest) returns (google.protobuf.Empty);
+}
+
+enum StudentSortField {
+  STUDENT_SORT_FIELD_UNSPECIFIED = 0; // treated as NAME
+  // Vietnamese given name (last word of the full name), then full name.
+  STUDENT_SORT_FIELD_NAME = 1;
+  STUDENT_SORT_FIELD_CODE = 2;
+  STUDENT_SORT_FIELD_DATE_OF_BIRTH = 3;
+}
+
+message Student {
+  int32 id = 1;
+  string code = 2;
+  string full_name = 3;
+  Date date_of_birth = 4;
+  optional string address = 5;
+  ClassroomSummary classroom = 6;
+  // Send back unchanged in UpdateStudentRequest; detects concurrent edits.
+  int32 version = 7;
+}
+
+message ListStudentsRequest {
+  int32 page = 1;      // 1-based; 0 means 1
+  int32 page_size = 2; // 0 means 20, capped at 100
+  StudentSortField sort_by = 3;
+  SortDirection direction = 4;
+  optional string code_prefix = 5;
+  optional int32 classroom_id = 6;
+}
+
+message ListStudentsResponse {
+  repeated Student items = 1;
+  PageInfo page_info = 2;
+}
+
+message GetStudentRequest {
+  int32 id = 1;
+}
+
+message GetStudentByCodeRequest {
+  string code = 1;
+}
+
+message CreateStudentRequest {
+  string code = 1;
+  string full_name = 2;
+  Date date_of_birth = 3;
+  optional string address = 4;
+  int32 classroom_id = 5;
+}
+
+message UpdateStudentRequest {
+  int32 id = 1;
+  int32 version = 2;
+  string code = 3;
+  string full_name = 4;
+  Date date_of_birth = 5;
+  optional string address = 6;
+  int32 classroom_id = 7;
+}
+
+message DeleteStudentRequest {
+  int32 id = 1;
+}

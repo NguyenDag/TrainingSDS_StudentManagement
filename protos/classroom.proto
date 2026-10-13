@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package studentmanagement.v1;
+
+option csharp_namespace = "StudentManagement.Contracts.V1";
+
+import "common.proto";
+import "google/protobuf/empty.proto";
+
+service ClassroomService {
+  rpc ListClassrooms(ListClassroomsRequest) returns (ListClassroomsResponse);
+  rpc GetClassroom(GetClassroomRequest) returns (Classroom);
+  // NOT_FOUND if the teacher does not exist.
+  rpc CreateClassroom(CreateClassroomRequest) returns (Classroom);
+  rpc UpdateClassroom(UpdateClassroomRequest) returns (Classroom);
+  // FAILED_PRECONDITION while the classroom still has students.
+  rpc DeleteClassroom(DeleteClassroomRequest) returns (google.protobuf.Empty);
+}
+
+enum ClassroomSortField {
+  CLASSROOM_SORT_FIELD_UNSPECIFIED = 0; // treated as CODE
+  CLASSROOM_SORT_FIELD_CODE = 1;
+  CLASSROOM_SORT_FIELD_NAME = 2;
+  CLASSROOM_SORT_FIELD_SUBJECT = 3;
+}
+
+message Classroom {
+  int32 id = 1;
+  string code = 2;
+  string name = 3;
+  string subject = 4;
+  TeacherSummary teacher = 5;
+  int32 student_count = 6;
+  int32 version = 7;
+}
+
+message ListClassroomsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  ClassroomSortField sort_by = 3;
+  SortDirection direction = 4;
+  // Matches a code prefix or part of the classroom name.
+  optional string keyword = 5;
+  optional int32 teacher_id = 6;
+}
+
+message ListClassroomsResponse {
+  repeated Classroom items = 1;
+  PageInfo page_info = 2;
+}
+
+message GetClassroomRequest {
+  int32 id = 1;
+}
+
+message CreateClassroomRequest {
+  string code = 1;
+  string name = 2;
+  string subject = 3;
+  int32 teacher_id = 4;
+}
+
+message UpdateClassroomRequest {
+  int32 id = 1;
+  int32 version = 2;
+  string code = 3;
+  string name = 4;
+  string subject = 5;
+  int32 teacher_id = 6;
+}
+
+message DeleteClassroomRequest {
+  int32 id = 1;
+}
