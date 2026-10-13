@@ -37,3 +37,9 @@ message ClassroomSummary {
   string subject = 4;
   TeacherSummary teacher = 5;
 }
+
+// One bar or slice of a chart.
+message CountByLabel {
+  string label = 1;
+  int32 count = 2;
+}

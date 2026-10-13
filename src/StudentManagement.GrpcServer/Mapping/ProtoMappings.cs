@@ -2,6 +2,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using StudentManagement.Application.Classrooms;
 using StudentManagement.Application.Common;
+using StudentManagement.Application.Reports;
 using StudentManagement.Application.Students;
 using StudentManagement.Application.Teachers;
 using Proto = StudentManagement.Contracts.V1;
@@ -150,4 +151,19 @@ internal static class ProtoMappings
         if (student.Address is not null) message.Address = student.Address;
         return message;
     }
+
+    // ---- Reports ----
+
+    public static Proto.DashboardResponse ToProto(this DashboardDto dashboard) => new()
+    {
+        TotalStudents = dashboard.TotalStudents,
+        TotalClassrooms = dashboard.TotalClassrooms,
+        TotalTeachers = dashboard.TotalTeachers,
+        StudentsByClassroom = { dashboard.StudentsByClassroom.Select(ToProto) },
+        StudentsBySubject = { dashboard.StudentsBySubject.Select(ToProto) },
+        StudentsByAgeGroup = { dashboard.StudentsByAgeGroup.Select(ToProto) },
+        ClassroomsByTeacher = { dashboard.ClassroomsByTeacher.Select(ToProto) },
+    };
+
+    private static Proto.CountByLabel ToProto(CountByLabel count) => new() { Label = count.Label, Count = count.Count };
 }

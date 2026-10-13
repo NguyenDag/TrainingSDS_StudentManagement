@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package studentmanagement.v1;
+
+option csharp_namespace = "StudentManagement.Contracts.V1";
+
+import "common.proto";
+
+service ReportService {
+  // Every dashboard figure in a single call (one round trip for the page).
+  rpc GetDashboard(GetDashboardRequest) returns (DashboardResponse);
+}
+
+// Empty for now; a message (not google.protobuf.Empty) so filters can be added later.
+message GetDashboardRequest {
+}
+
+message DashboardResponse {
+  int32 total_students = 1;
+  int32 total_classrooms = 2;
+  int32 total_teachers = 3;
+  // Includes classrooms without students (count 0).
+  repeated CountByLabel students_by_classroom = 4;
+  repeated CountByLabel students_by_subject = 5;
+  // Fixed buckets 16–18, 19–21, 22–25, >25, always all four.
+  repeated CountByLabel students_by_age_group = 6;
+  // Includes teachers without classrooms (count 0).
+  repeated CountByLabel classrooms_by_teacher = 7;
+}

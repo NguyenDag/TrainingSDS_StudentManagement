@@ -40,6 +40,7 @@ app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
 app.MapGrpcService<StudentGrpcService>();
 app.MapGrpcService<ClassroomGrpcService>();
 app.MapGrpcService<TeacherGrpcService>();
+app.MapGrpcService<ReportGrpcService>();
 app.MapHealthChecks("/healthz");
 
 if (app.Environment.IsDevelopment())
