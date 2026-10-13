@@ -48,7 +48,7 @@ public sealed class GrpcErrorHandler(IMessageService messages)
         {
             var error = ServerError.From(exception);
             if (handle is null || !await handle(error))
-                await messages.ErrorAsync(error.Message);
+                _ = messages.ErrorAsync(error.Message); // not awaited: it completes only when the toast closes
             return false;
         }
     }
