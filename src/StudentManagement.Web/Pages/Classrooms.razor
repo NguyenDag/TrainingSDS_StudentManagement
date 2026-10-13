@@ -35,7 +35,7 @@
 <ClassroomFormModal @ref="_modal" OnSaved="LoadAsync" />
 
 @code {
-    // Set by the "Số lớp" link on the teachers page.
+    // Set by the classroom-count link on the teachers page.
     [Parameter, SupplyParameterFromQuery(Name = "teacherId")] public int? TeacherId { get; set; }
 
     private ClassroomFormModal? _modal;

@@ -108,6 +108,8 @@ public sealed class ListLoggerProvider : ILoggerProvider
         public bool IsEnabled(LogLevel logLevel) => true;
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
-            Func<TState, Exception?, string> formatter) => messages.Enqueue(formatter(state, exception));
+            Func<TState, Exception?, string> formatter) =>
+            // Include the full exception: secrets could hide in an inner message or stack trace.
+            messages.Enqueue(exception is null ? formatter(state, null) : $"{formatter(state, exception)}{Environment.NewLine}{exception}");
     }
 }

@@ -16,7 +16,7 @@ namespace StudentManagement.Infrastructure.Tests;
 /// </summary>
 public sealed class DatabaseFixture : IAsyncLifetime
 {
-    private const string AppPassword = "sm_app_test";
+    public const string AppPassword = "sm_app_test";
 
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
         .WithImage("postgres:16")

@@ -38,7 +38,7 @@
 <StudentFormModal @ref="_modal" OnSaved="LoadAsync" />
 
 @code {
-    // Set by the "Sĩ số" link on the classrooms page.
+    // Set by the class-size link on the classrooms page.
     [Parameter, SupplyParameterFromQuery(Name = "classroomId")] public int? ClassroomId { get; set; }
 
     private StudentFormModal? _modal;
