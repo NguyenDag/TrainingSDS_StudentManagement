@@ -1,6 +1,6 @@
 # Bản đồ OOP & SOLID
 
-Chỉ ra file/dòng thể hiện từng nguyên tắc. Viết dần theo milestone: phần OOP từ M1 (Bài 1), phần SOLID bổ sung ở M3.
+Chỉ ra file/dòng thể hiện từng tính chất OOP, nguyên lý SOLID và design pattern trong code. Bảng ánh xạ yêu cầu → file đầy đủ nằm ở [PROJECT_PLAN.md mục 6](../PROJECT_PLAN.md#6-ánh-xạ-yêu-cầu--nơi-đáp-ứng).
 
 ## OOP (Bài 1)
 
@@ -112,7 +112,7 @@ Tầng cao (Application) định nghĩa interface; tầng thấp (Infrastructure
 | [IStudentRepository.cs:7](../src/StudentManagement.Application/Students/IStudentRepository.cs#L7), [IUnitOfWork.cs:7](../src/StudentManagement.Application/Abstractions/IUnitOfWork.cs#L7) | Interface nằm ở Application, không phải ở Infrastructure |
 | [StudentAppService.cs:11-15](../src/StudentManagement.Application/Students/StudentAppService.cs#L11-L15) | Constructor nhận toàn interface; không `new` phụ thuộc nào |
 | [StudentManagement.Application.csproj](../src/StudentManagement.Application/StudentManagement.Application.csproj) | Chỉ reference Domain + FluentValidation, không có NHibernate |
-| [StudentRepository.cs:10](../src/StudentManagement.Infrastructure/Persistence/Repositories/StudentRepository.cs#L10), [DependencyInjection.cs:41](../src/StudentManagement.Infrastructure/DependencyInjection.cs#L41) | Infrastructure implement interface của Application và tự đăng ký qua `AddInfrastructure()`; mọi kiểu NHibernate đều `internal` |
+| [StudentRepository.cs:10](../src/StudentManagement.Infrastructure/Persistence/Repositories/StudentRepository.cs#L10), [DependencyInjection.cs:32](../src/StudentManagement.Infrastructure/DependencyInjection.cs#L32) | Infrastructure implement interface của Application và tự đăng ký qua `AddInfrastructure()`; mọi kiểu NHibernate đều `internal` |
 | [Program.cs:11-12](../src/StudentManagement.GrpcServer/Program.cs#L11-L12) | Composition root: nơi duy nhất biết mọi tầng, ghép `AddApplication()` + `AddInfrastructure()` |
 
 ### Dependency Injection
@@ -133,3 +133,6 @@ Tầng cao (Application) định nghĩa interface; tầng thấp (Infrastructure
 | Template Method | [Person.cs:41-51](../src/StudentManagement.Domain/Common/Person.cs#L41-L51) gọi hook `MinimumAge` |
 | Test Double (Fake) | [InMemoryRepository.cs](../tests/StudentManagement.Application.Tests/Fakes/InMemoryRepository.cs), [FakeRepositories.cs](../tests/StudentManagement.Application.Tests/Fakes/FakeRepositories.cs) |
 | Interceptor (Chain of Responsibility) | [LoggingInterceptor.cs](../src/StudentManagement.GrpcServer/Interceptors/LoggingInterceptor.cs) → [ExceptionInterceptor.cs](../src/StudentManagement.GrpcServer/Interceptors/ExceptionInterceptor.cs) → service |
+| Options | [NHibernateOptions.cs:5](../src/StudentManagement.Infrastructure/Persistence/NHibernateOptions.cs#L5): cấu hình NHibernate gom vào một record bất biến, đọc từ `IConfiguration` ở [DependencyInjection.cs:24](../src/StudentManagement.Infrastructure/DependencyInjection.cs#L24) |
+| Composition Root | [Program.cs:11-12](../src/StudentManagement.GrpcServer/Program.cs#L11-L12): nơi duy nhất ghép các tầng |
+| Translator | [DbExceptionTranslator.cs:32](../src/StudentManagement.Infrastructure/Persistence/DbExceptionTranslator.cs#L32): `PostgresException` (SqlState + tên constraint) → lỗi nghiệp vụ |
