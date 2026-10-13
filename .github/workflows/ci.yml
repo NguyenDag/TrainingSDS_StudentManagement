@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          # SDK pinned by global.json builds; projects target net8.0, so tests need the 8.0 runtime.
+          global-json-file: global.json
+          dotnet-version: 8.0.x
+      - run: dotnet restore
+      - run: dotnet build --no-restore -c Release
+      # Infrastructure/GrpcServer tests start PostgreSQL via Testcontainers on the runner's Docker.
+      - run: dotnet test --no-build -c Release --logger "trx" --results-directory TestResults
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: TestResults
+
+  docker:
+    needs: build-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      # Compose refuses to parse without these; images are built, not run, so dummies are fine.
+      POSTGRES_PASSWORD: ci
+      APP_DB_PASSWORD: ci
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f docker-compose.yml build
+      - name: Push images to GHCR
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          for name in server web; do
+            target="ghcr.io/$owner/studentmanagement-$name"
+            docker tag "studentmanagement-$name" "$target:${{ github.ref_name }}"
+            docker tag "studentmanagement-$name" "$target:latest"
+            docker push --all-tags "$target"
+          done

@@ -1,3 +1,5 @@
+# docker compose up --build  ->  http://localhost:8080
+# Only `web` publishes a port here; docker-compose.override.yml opens db and native gRPC for dev.
 services:
   db:
     image: postgres:16
@@ -15,6 +17,43 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    restart: unless-stopped
+    networks: [backend]
+
+  server:
+    build:
+      context: .
+      dockerfile: src/StudentManagement.GrpcServer/Dockerfile
+    image: studentmanagement-server
+    environment:
+      # Least-privilege role created by db/init/00_app_role.sh, never the postgres superuser.
+      ConnectionStrings__Default: Host=db;Port=5432;Database=studentmanagement;Username=sm_app;Password=${APP_DB_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [backend]
+
+  web:
+    build:
+      context: .
+      dockerfile: src/StudentManagement.Web/Dockerfile
+    image: studentmanagement-web
+    ports:
+      - "8080:80"
+    depends_on:
+      server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    networks: [backend]
+
+networks:
+  backend:
 
 volumes:
   pgdata:

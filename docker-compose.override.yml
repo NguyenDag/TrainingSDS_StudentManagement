@@ -1,5 +1,16 @@
-# Dev only: expose Postgres to host tools (DBeaver/pgAdmin). 5433 avoids clashing with a local Postgres.
+# Dev only (merged automatically by `docker compose up`; skip it with `-f docker-compose.yml`).
 services:
   db:
     ports:
+      # 5433 avoids clashing with a locally installed Postgres (DBeaver/pgAdmin connect here).
       - "5433:5432"
+
+  server:
+    ports:
+      # Native gRPC (h2c) for grpcurl/Postman: grpcurl -plaintext localhost:8081 list
+      - "8081:8081"
+    environment:
+      # Turns on gRPC reflection and readable console logs.
+      ASPNETCORE_ENVIRONMENT: Development
+      Logging__LogLevel__Default: Debug
+      NHibernate__ShowSql: "true"
